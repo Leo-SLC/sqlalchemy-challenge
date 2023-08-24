@@ -54,31 +54,42 @@ def home():
             <li>/api/v1.0/[startDate]/[endDate]</li>
         </ul>'''
 
-
+#Our route for precipitation
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     session = Session(engine)
     return {date:prcp for date,prcp in session.query(measurement.date, measurement.prcp).filter(measurement.date>="2016-08-23").all()}
-
+#route for the busiest station
 @app.route("/api/v1.0/stations")
 def stations():
     session = Session(engine)
     return {id:loc for id,loc in session.query(station.station, station.name).all()}
 
+#route for data from the busiest station
 @app.route("/api/v1.0/tobs")
 def tempsobs():
     session = Session(engine)
     return {date:tobs for date,tobs in session.query(measurement.date, measurement.tobs).filter(((measurement.date>="2016-08-23"))&(measurement.station == "USC00519281")).all()}
 
+#route for summary statistics with a start date
 @app.route("/api/v1.0/<startDate>")
-@app.route("/api/v1.0/<startDate>/<endDate>")
 def startend(startDate, endDate="2017-08-23"):
     results = session.query(func.min(measurement.tobs), 
-        func.avg(measurement.tobs), 
+       func.avg(measurement.tobs), 
         func.max(measurement.tobs)).\
         filter((measurement.date>=startDate)&(measurement.date<=endDate)).first()
+    temps = list(np.ravel(results))
+    return jsonify(temps)
 
-    print(results)
+#route for summary statistics between two dates 
+@app.route("/api/v1.0/<startDate>/<endDate>")
+def startendtimeframe(startDate, endDate):
+    timeframeresults = session.query(func.min(measurement.tobs), 
+       func.avg(measurement.tobs), 
+        func.max(measurement.tobs)).\
+        filter((measurement.date>=startDate)&(measurement.date<=endDate)).first()
+    temps = list(np.ravel(timeframeresults))
+    return jsonify(temps)
 
 
 
